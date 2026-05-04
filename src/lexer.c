@@ -11,6 +11,23 @@ static inline bool is_newline(char c) {
     return c == '\n' || c == '\0';
 }
 
+typedef struct {
+  const char *word;
+  TokenKind token;
+} KeywordEntry;
+
+static const KeywordEntry keywords[] = {
+    {"if", TK_IF},         {"then", TK_THEN},
+    {"else", TK_ELSE},     {"end", TK_END},
+    {"for", TK_FOR},       {"while", TK_WHILE},
+    {"do", TK_DO},         {"fn", TK_FN},
+    {"return", TK_RETURN}, {"continue", TK_CONTINUE},
+    {"break", TK_BREAK},   {"true", TK_TRUE},
+    {"false", TK_FALSE},   {"nil", TK_NIL},
+    {"and", TK_AND},       {"or", TK_OR},
+    {"print", TK_PRINT},   {"let", TK_LET},
+};
+
 static char advance(Lexer *lex) {
     return lex->source->data[lex->pos++];
 }
@@ -66,11 +83,30 @@ static void number(Lexer *lex) {
 
     Token *token = push_long(lex, TK_NUMBER, start, end);
     token->as.number = value;
-
-    printf("Value %lf\n", value);
 }
 
-static void ident(Lexer *lex) {}
+static void ident(Lexer *lex) {
+  size_t start = lex->pos - 1;
+  while (isalnum(peek(lex)))
+    advance(lex);
+
+  size_t token_len = lex->pos - start;
+  size_t keyword_count = sizeof(keywords) / sizeof(keywords[0]);
+
+  for (size_t i = 0; i < keyword_count; i++) {
+    const char *w = keywords[i].word;
+    size_t len = strlen(w);
+
+    if (len == token_len && memcmp(w, lex->source->data + start, len) == 0) {
+      push_long(lex, keywords[i].token, start, lex->pos);
+      return;
+    }
+  }
+
+  Token *token = push_long(lex, TK_IDENT, start, lex->pos);
+  token->as.ident.data = arena_strdup(lex->arena, lex->source->data + start, token_len);
+  token->as.ident.length = token_len;
+}
 
 static void string(Lexer *lex) {
     size_t start = lex->pos; // ignore "
@@ -82,13 +118,9 @@ static void string(Lexer *lex) {
 
     advance(lex); // consume "
 
-    char *str = arena_strdup(lex->arena, lex->source->data + start, length);
-
     Token *token = push_long(lex, TK_STRING, start, end);
-    token->as.string.data = str;
+    token->as.string.data = arena_strdup(lex->arena, lex->source->data + start, length);
     token->as.string.length = length;
-
-    printf("String: '%s'\n", str);
 }
 
 static void next_token(Lexer *lex) {

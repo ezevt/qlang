@@ -16,8 +16,11 @@ typedef enum {
     TK_EQ, TK_NE, TK_GT, TK_GE, TK_LT, TK_LE,
 
     TK_LET, TK_IF, TK_THEN, TK_ELSE,
-    TK_WHILE, TK_DO, TK_FOR,
-    TK_FN, TK_END,
+    TK_WHILE, TK_DO, TK_FOR, TK_CONTINUE, TK_BREAK,
+    TK_FN, TK_RETURN, TK_END,
+    TK_TRUE, TK_FALSE, TK_NIL,
+    TK_AND, TK_OR,
+    TK_PRINT,
 
     TK_EOF,
 } TokenKind;
