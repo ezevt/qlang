@@ -5,9 +5,16 @@
 #include "lexer.h"
 #include "source.h"
 #include "diagnostic.h"
+#include "repl.h"
 
-int main(void) {
-    const char *filepath = "tests/hello-world.q";
+int main(int argc, char **argv) {
+    
+    if (argc == 1) {
+        run_loop();
+        return 0;
+    }
+
+    const char *filepath = argv[1];
     SourceFile *src = source_load(filepath);
     if (!src) {
         fprintf(stderr, "qlang: could not open '%s': %s\n", filepath, strerror(errno));
