@@ -1,6 +1,9 @@
 #include "repl.h"
 #include "lexer.h"
+#include "print_ast.h"
 #include "source.h"
+#include "parser.h"
+
 #include <string.h>
 
 static void run(const char* buffer) {
@@ -19,10 +22,27 @@ static void run(const char* buffer) {
     };
 
     lex(&lexer);
-    printf("Lexer found %lu tokens\n", lexer.tokens.count);
+    
+    if (!diag_has_errors(&d)) {
+        Parser parser = {
+            .tokens = lexer.tokens.items,
+            .count = lexer.tokens.count,
+            .source = src,
+            .diag = &d,
+            .arena = &a,
+            .pos = 0,
+        };
+
+        Stmt *root = parse(&parser);
+
+        if (!diag_has_errors(&d)) {
+            print_ast(root, stdout);
+            printf("\n");
+        }
+    }
 
     diag_print_all(&d, stdout);
-    
+
     lex_free(&lexer);
     arena_free(&a);
     diag_clear(&d);
