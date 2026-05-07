@@ -2,14 +2,19 @@
 #include "ast.h"
 #include "common.h"
 #include "diagnostic.h"
+#include "env.h"
 #include "value.h"
 
-void interp_init(Interpreter *it) {
-    // init global env
+void interp_init(Interpreter *it, Diagnostics *diag) {
+    printf("init \n");
+    it->global = env_new(NULL);
+    it->env = it->global;
+    it->diag = diag;
+    it->return_value = value_nil();
 }
 
 void interp_shutdown(Interpreter *it) {
-    //free global env
+    (void)it;
 }
 
 InterpResult interp_run(Interpreter *it, SourceFile *src, Stmt *root) {
@@ -38,6 +43,31 @@ static inline bool check_numbers(Interpreter *it, SourceFile *src, Value a, Valu
 
     diag_emit(it->diag, DIAG_ERROR, src, span, "Both operands must be numbers.");
     return false;
+}
+
+static InterpResult evaluate_var(Interpreter *it, SourceFile *src, Expr *expr, Value *out) {
+    StringSlice name = expr->as.var.name;
+    
+    if (!env_get(it->env, name, out)) {
+        diag_emit(it->diag, DIAG_ERROR, src, expr->span, "'%.*s' is not defined", name.length, name.data);
+        return INTERP_ERROR;
+    }
+
+    return INTERP_OK;
+}
+
+static InterpResult evaluate_assignment(Interpreter *it, SourceFile *src, Expr *expr, Value *out) {
+    StringSlice name = expr->as.assignment.target->as.var.name;
+    
+    if (evaluate(it, src, expr->as.assignment.value, out) == INTERP_ERROR)
+        return INTERP_ERROR;
+
+    if (!env_assign(it->env, name, *out)) {
+        diag_emit(it->diag, DIAG_ERROR, src, expr->span, "'%.*s' is not defined", name.length, name.data);
+        return INTERP_ERROR;
+    }
+
+    return INTERP_OK;
 }
 
 static InterpResult evaluate_unary(Interpreter *it, SourceFile *src, Expr *expr, Value *out) {
@@ -172,8 +202,10 @@ InterpResult evaluate(Interpreter *it, SourceFile *src, Expr *expr, Value *out) 
         case EX_LOGIC:
             return evaluate_logic(it, src, expr, out);
         case EX_VAR:
-        case EX_STRING:
+            return evaluate_var(it, src, expr, out);
         case EX_ASSIGNMENT:
+            return evaluate_assignment(it, src, expr, out);
+        case EX_STRING:
         default:
             UNREACHABLE();
     }
@@ -214,12 +246,32 @@ static InterpResult execute_expr(Interpreter *it, SourceFile *src, Stmt *stmt) {
     return INTERP_OK;
 }
 
+static InterpResult execute_let(Interpreter *it, SourceFile *src, Stmt *stmt) {
+    Value v;
+
+    if (stmt->as.let.initializer) {
+        InterpResult res = evaluate(it, src, stmt->as.let.initializer, &v);
+        if (res == INTERP_ERROR) return INTERP_ERROR;
+    } else {
+        v = value_nil();
+    }
+
+    StringSlice name = stmt->as.let.identifier;
+
+    if (!env_define(it->env, name, v)) {
+        diag_emit(it->diag, DIAG_ERROR, src, stmt->span, "'%.*s' is already defined.", name.length, name.data);
+        return INTERP_ERROR;
+    }
+
+    return INTERP_OK;
+}
+
 InterpResult execute(Interpreter *it, SourceFile *src, Stmt *stmt) {
     switch (stmt->kind) {
         case ST_BLOCK: return execute_block(it, src, stmt);
         case ST_PRINT: return execute_print(it, src, stmt);
         case ST_EXPR: return execute_expr(it, src, stmt);
-        case ST_LET:
+        case ST_LET: return execute_let(it, src, stmt);
         case ST_IF:
         case ST_WHILE:
         default:

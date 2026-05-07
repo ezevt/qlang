@@ -4,6 +4,7 @@
 #include "ast.h"
 #include "value.h"
 #include "diagnostic.h"
+#include "env.h"
 
 typedef enum {
     INTERP_OK,
@@ -13,10 +14,12 @@ typedef enum {
 
 typedef struct {
     Diagnostics *diag;
+    ObjEnv *global;
+    ObjEnv *env;
     Value return_value;
 } Interpreter;
 
-void interp_init(Interpreter *it);
+void interp_init(Interpreter *it, Diagnostics *diag);
 void interp_shutdown(Interpreter *it);
 InterpResult interp_run(Interpreter *it, SourceFile *src, Stmt *root);
 

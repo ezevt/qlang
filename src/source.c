@@ -5,7 +5,6 @@
 
 static SourceFile *source_create(char* data, size_t length, const char* label) {
     size_t line_count = 1;
-    printf("length: %lu\n", length);
     for (size_t i = 0; i < length; i++)
         if (data[i] == '\n') line_count++;
 

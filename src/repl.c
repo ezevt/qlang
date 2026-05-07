@@ -7,54 +7,45 @@
 
 #include <string.h>
 
-static void run(const char* buffer) {
+static void run(const char* buffer, Diagnostics *diag, Arena *arena, Interpreter *it) {
     SourceFile *src = source_from_string(buffer, "<repl>");
     printf("file %s: %lu lines, %lu chars\n", src->path, src->line_count, src->length);
 
-    Diagnostics d = {0};
-    Arena a = {0};
 
     Lexer lexer = {
         .source = src,
-        .diag = &d,
-        .arena = &a,
+        .diag = diag,
+        .arena = arena,
         .pos = 0,
         .tokens = {0},
     };
 
     lex(&lexer);
     
-    if (!diag_has_errors(&d)) {
+    if (!diag_has_errors(diag)) {
         Parser parser = {
             .tokens = lexer.tokens.items,
             .count = lexer.tokens.count,
             .source = src,
-            .diag = &d,
-            .arena = &a,
+            .diag = diag,
+            .arena = arena,
             .pos = 0,
         };
 
         Stmt *root = parse(&parser);
 
-        if (!diag_has_errors(&d)) {
+        if (!diag_has_errors(diag)) {
             print_ast(root, stdout);
             printf("\n");
 
-            Interpreter it = {
-                .diag = &d,
-            };
-
-            printf("start\n");
-            execute(&it, src, root);
-            printf("end\n");
+            execute(it, src, root);
         }
     }
 
-    diag_print_all(&d, stdout);
+    diag_print_all(diag, stdout);
 
     lex_free(&lexer);
-    arena_free(&a);
-    diag_clear(&d);
+    diag_clear(diag);
     source_free(src);
 }
 
@@ -64,6 +55,12 @@ void run_loop(void) {
     printf("Type \"q\" to exit Q lang\n");
 
     char buffer[1024];
+    Diagnostics diag = {0};
+    Arena arena = {0};
+    Interpreter it;
+
+
+    interp_init(&it, &diag);
 
     while (true) {
         printf(">> ");
@@ -81,8 +78,11 @@ void run_loop(void) {
                 continue;
             }
 
-            run(buffer);
+            run(buffer, &diag, &arena, &it);
         }
     }
+
+    interp_shutdown(&it);
+    arena_free(&arena);
 }
 

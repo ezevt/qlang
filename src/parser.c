@@ -106,7 +106,7 @@ static Expr *primary(Parser *p) {
     if (match(p, TK_IDENT)) {
         Token *tok = previous(p);
         Expr *expr = new_expr(p, EX_VAR, tok->span);
-        expr->as.var.span = tok->span;
+        expr->as.var.name = tok->as.ident;
         
         return expr;
     }
@@ -315,7 +315,7 @@ static Stmt *let_statement(Parser *p) {
     }
 
     Stmt *stmt = new_stmt(p, ST_LET, tok->span);
-    stmt->as.let.identifier = ident->span;
+    stmt->as.let.identifier = ident->as.ident;
     stmt->as.let.initializer = initializer;
 
     return stmt;

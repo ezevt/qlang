@@ -28,7 +28,7 @@ typedef struct Expr {
         double number;
         bool boolean;
         struct { const char *data; size_t length; } string;
-        struct { Span span; } var;
+        struct { StringSlice name; } var;
         struct { Expr *inner; } grouping;
 
         struct { Expr *right; TokenKind op; } unary;
@@ -61,7 +61,7 @@ typedef struct Stmt {
         } block;
 
         struct {
-            Span identifier;
+            StringSlice identifier;
             Expr *initializer;
         } let;
         
