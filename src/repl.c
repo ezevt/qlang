@@ -3,7 +3,7 @@
 #include "print_ast.h"
 #include "source.h"
 #include "parser.h"
-#include "interpreter.h"
+#include "interp.h"
 
 #include <string.h>
 

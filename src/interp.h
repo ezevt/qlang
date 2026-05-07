@@ -16,9 +16,9 @@ typedef struct {
     Value return_value;
 } Interpreter;
 
-void interpreter_init(Interpreter *it);
-void interpreter_shutdown(Interpreter *it);
-InterpResult interpreter_run(Interpreter *it, SourceFile *src, Stmt *root);
+void interp_init(Interpreter *it);
+void interp_shutdown(Interpreter *it);
+InterpResult interp_run(Interpreter *it, SourceFile *src, Stmt *root);
 
 InterpResult evaluate(Interpreter *it, SourceFile *src, Expr *expr, Value *out);
 InterpResult execute(Interpreter *it, SourceFile* src, Stmt *stmt);

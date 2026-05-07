@@ -44,8 +44,8 @@ static inline bool value_is_obj_kind(Value v, ObjKind k) {
     return v.kind == V_OBJ && v.as.obj->kind == k;
 }
 
-static inline bool value_is_string(Value v) { return value_is_obj_kind(v, OBJ_STRING); };
-static inline bool value_is_fn(Value v) { return value_is_obj_kind(v, OBJ_FN); };
+static inline bool value_is_string(Value v) { return value_is_obj_kind(v, OBJ_STRING); }
+static inline bool value_is_fn(Value v) { return value_is_obj_kind(v, OBJ_FN); }
 
 bool value_equals(Value a, Value b);
 bool value_is_truthy(Value v);
