@@ -18,7 +18,7 @@ typedef struct {
 
 void interpreter_init(Interpreter *it);
 void interpreter_shutdown(Interpreter *it);
-void interpreter_run(Interpreter *it, SourceFile *src, Stmt *root);
+InterpResult interpreter_run(Interpreter *it, SourceFile *src, Stmt *root);
 
 InterpResult evaluate(Interpreter *it, SourceFile *src, Expr *expr, Value *out);
 InterpResult execute(Interpreter *it, SourceFile* src, Stmt *stmt);

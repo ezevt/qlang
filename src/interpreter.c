@@ -1,11 +1,30 @@
 #include "interpreter.h"
+#include "ast.h"
 #include "common.h"
 #include "diagnostic.h"
 #include "value.h"
 
-void interpreter_init(Interpreter *it) {}
-void interpreter_shutdown(Interpreter *it) {}
-void interpreter_run(Interpreter *it, SourceFile *src, Stmt *root) {}
+void interpreter_init(Interpreter *it) {
+    // init global env
+}
+
+void interpreter_shutdown(Interpreter *it) {
+    //free global env
+}
+
+InterpResult interpreter_run(Interpreter *it, SourceFile *src, Stmt *root) {
+    for (size_t i = 0; i < root->as.block.count; i++) {
+        InterpResult res = execute(it, src, root->as.block.items[i]);
+        if (res == INTERP_ERROR) return INTERP_ERROR;
+
+        if (res == INTERP_RETURN) {
+            diag_emit(it->diag, DIAG_ERROR, src, root->as.block.items[i]->span, "'return' outside of function.");
+            return INTERP_ERROR;
+        }
+    }
+
+    return INTERP_OK;
+}
 
 static inline bool check_number(Interpreter *it, SourceFile *src, Value v, Span span) {
     if (is_number(v)) return true;
@@ -162,4 +181,53 @@ InterpResult evaluate(Interpreter *it, SourceFile *src, Expr *expr, Value *out) 
     return INTERP_OK;
 }
 
-InterpResult execute(Interpreter *it, SourceFile *src, Stmt *stmt) {}
+InterpResult execute_block(Interpreter *it, SourceFile *src, Stmt *stmt) {
+    // Create env
+
+    for (size_t i = 0; i < stmt->as.block.count; i++) {
+        InterpResult res = execute(it, src, stmt->as.block.items[i]);
+
+        if (res == INTERP_ERROR) return INTERP_ERROR;
+        if (res == INTERP_RETURN) return INTERP_RETURN;
+    }
+
+    return INTERP_OK;
+}
+
+InterpResult execute_print(Interpreter *it, SourceFile *src, Stmt *stmt) {
+    Value v;
+    InterpResult res = evaluate(it, src, stmt->as.print, &v);
+
+    if (res == INTERP_ERROR) return INTERP_ERROR;
+
+    print_value(v);
+    printf("\n");
+
+    return INTERP_OK;
+}
+
+InterpResult execute_expr(Interpreter *it, SourceFile *src, Stmt *stmt) {
+    Value v;
+    InterpResult res = evaluate(it, src, stmt->as.expr_stmt, &v);
+
+    if (res == INTERP_ERROR) return INTERP_ERROR;
+    return INTERP_OK;
+}
+
+InterpResult execute(Interpreter *it, SourceFile *src, Stmt *stmt) {
+    switch (stmt->kind) {
+        case ST_BLOCK:
+            return execute_block(it, src, stmt);
+        case ST_PRINT:
+            return execute_print(it, src, stmt);
+        case ST_EXPR:
+            return execute_expr(it, src, stmt);
+        case ST_LET:
+        case ST_IF:
+        case ST_WHILE:
+        default:
+            UNREACHABLE();
+    }
+
+    return INTERP_OK;
+}

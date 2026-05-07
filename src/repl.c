@@ -44,11 +44,9 @@ static void run(const char* buffer) {
                 .diag = &d,
             };
 
-            Value v;
-            evaluate(&it, src, root->as.block.items[0]->as.expr_stmt, &v);
-            printf("value: ");
-            print_value(v);
-            printf("\n");
+            printf("start\n");
+            execute(&it, src, root);
+            printf("end\n");
         }
     }
 
