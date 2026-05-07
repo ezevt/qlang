@@ -3,6 +3,7 @@
 #include "print_ast.h"
 #include "source.h"
 #include "parser.h"
+#include "interpreter.h"
 
 #include <string.h>
 
@@ -37,6 +38,16 @@ static void run(const char* buffer) {
 
         if (!diag_has_errors(&d)) {
             print_ast(root, stdout);
+            printf("\n");
+
+            Interpreter it = {
+                .diag = &d,
+            };
+
+            Value v;
+            evaluate(&it, src, root->as.block.items[0]->as.expr_stmt, &v);
+            printf("value: ");
+            print_value(v);
             printf("\n");
         }
     }
