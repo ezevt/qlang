@@ -6,7 +6,6 @@
 #include "value.h"
 
 void interp_init(Interpreter *it, Diagnostics *diag) {
-    printf("init \n");
     it->global = env_new(NULL);
     it->env = it->global;
     it->diag = diag;

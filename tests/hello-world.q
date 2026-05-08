@@ -1,5 +1,6 @@
-+- *  
-100 "esto es un string"
-+ / // co men ta rio
+print(123)
 
-ident
+let x = nil
+let y = 5
+
+print(x or y)
