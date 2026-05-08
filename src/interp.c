@@ -13,7 +13,8 @@ void interp_init(Interpreter *it, Diagnostics *diag) {
 }
 
 void interp_shutdown(Interpreter *it) {
-    (void)it;
+    free(it->env->entries);
+    free(it->env);
 }
 
 InterpResult interp_run(Interpreter *it, SourceFile *src, Stmt *root) {
@@ -213,7 +214,8 @@ InterpResult evaluate(Interpreter *it, SourceFile *src, Expr *expr, Value *out) 
 }
 
 static InterpResult execute_block(Interpreter *it, SourceFile *src, Stmt *stmt) {
-    // Create env
+    ObjEnv *local = env_new(it->env);
+    it->env = local;
 
     for (size_t i = 0; i < stmt->as.block.count; i++) {
         InterpResult res = execute(it, src, stmt->as.block.items[i]);
@@ -222,6 +224,11 @@ static InterpResult execute_block(Interpreter *it, SourceFile *src, Stmt *stmt) 
         if (res == INTERP_RETURN) return INTERP_RETURN;
     }
 
+    it->env = it->env->enclosing;
+
+    free(local->entries);
+    free(local);
+    
     return INTERP_OK;
 }
 
@@ -265,14 +272,45 @@ static InterpResult execute_let(Interpreter *it, SourceFile *src, Stmt *stmt) {
     return INTERP_OK;
 }
 
+static InterpResult execute_if(Interpreter *it, SourceFile *src, Stmt *stmt) {
+    Value c;
+    InterpResult res = evaluate(it, src, stmt->as.if_else.condition, &c);
+
+    if (res == INTERP_ERROR) return INTERP_ERROR;
+
+    if (value_is_truthy(c)) {
+        return execute(it, src, stmt->as.if_else.if_branch);
+    } else if (stmt->as.if_else.else_branch) {
+        return execute(it, src, stmt->as.if_else.else_branch);
+    }
+
+    return INTERP_OK;
+}
+
+static InterpResult execute_while(Interpreter *it, SourceFile *src, Stmt *stmt) {
+    Value c;
+
+    while (true) {
+        InterpResult res = evaluate(it, src, stmt->as.while_do.condition, &c);
+        if (res == INTERP_ERROR) return INTERP_ERROR;
+        
+        if (!value_is_truthy(c)) break;
+
+        res = execute(it, src, stmt->as.while_do.body);
+        if (res == INTERP_ERROR) return INTERP_ERROR;
+    }
+
+    return INTERP_OK;
+}
+
 InterpResult execute(Interpreter *it, SourceFile *src, Stmt *stmt) {
     switch (stmt->kind) {
         case ST_BLOCK: return execute_block(it, src, stmt);
         case ST_PRINT: return execute_print(it, src, stmt);
         case ST_EXPR: return execute_expr(it, src, stmt);
         case ST_LET: return execute_let(it, src, stmt);
-        case ST_IF:
-        case ST_WHILE:
+        case ST_IF: return execute_if(it, src, stmt);
+        case ST_WHILE: return execute_while(it, src, stmt);
         default:
             UNREACHABLE();
     }
