@@ -2,6 +2,7 @@
 #define VALUE_H
 
 #include <stdbool.h>
+#include <stdlib.h>
 
 typedef enum {
     OBJ_FN,
@@ -47,9 +48,22 @@ static inline bool value_is_obj_kind(Value v, ObjKind k) {
 static inline bool value_is_string(Value v) { return value_is_obj_kind(v, OBJ_STRING); }
 static inline bool value_is_fn(Value v) { return value_is_obj_kind(v, OBJ_FN); }
 
+typedef struct {
+    Obj obj;
+    size_t length;
+    char *data;
+} ObjString;
+
+ObjString *obj_string_new(const char *src, size_t length);
+ObjString *obj_string_take(char *data, size_t length);
+
+static inline ObjString *as_string(Value v) { return (ObjString *)v.as.obj; }
+
 bool value_equals(Value a, Value b);
 bool value_is_truthy(Value v);
 
 void print_value(Value v);
+
+ObjString value_to_string(Value v);
 
 #endif

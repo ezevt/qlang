@@ -38,7 +38,7 @@ static void run(const char* buffer, Diagnostics *diag, Arena *arena, Interpreter
             print_ast(root, stdout);
             printf("\n");
 
-            execute(it, src, root);
+            interp_run(it, src, root);
         }
     }
 

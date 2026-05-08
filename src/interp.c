@@ -206,6 +206,11 @@ InterpResult evaluate(Interpreter *it, SourceFile *src, Expr *expr, Value *out) 
         case EX_ASSIGNMENT:
             return evaluate_assignment(it, src, expr, out);
         case EX_STRING:
+            *out = (Value) {
+                .kind = V_OBJ,
+                .as.obj = (Obj *)obj_string_new(expr->as.string.data, expr->as.string.length),
+            };
+            break;
         default:
             UNREACHABLE();
     }

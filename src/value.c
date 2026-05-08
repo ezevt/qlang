@@ -1,6 +1,28 @@
 #include "value.h"
+#include "common.h"
 
 #include <stdio.h>
+#include <string.h>
+
+ObjString *obj_string_new(const char *src, size_t length) {
+    ObjString *obj = malloc(sizeof(ObjString));
+
+    char *data = malloc((length + 1) * sizeof(char));
+    memcpy(data, src, length);
+    data[length] = '\0';
+
+    obj->obj.kind = OBJ_STRING;
+    obj->data = data;
+    obj->length = length;
+    
+    return obj;
+}
+
+ObjString *obj_string_take(char *data, size_t length) {
+    (void)data;
+    (void)length;
+    UNREACHABLE();
+}
 
 bool value_equals(Value a, Value b) {
        if (a.kind != b.kind)
@@ -38,7 +60,12 @@ void print_value(Value v) {
             printf("nil");
             break;
         case V_OBJ:
-            printf("<obj>");
+            if (value_is_string(v)) {
+                ObjString *str = as_string(v);
+                printf("%.*s", (int)str->length, str->data);
+            } else {
+                printf("<obj>");
+            }
             break;
         default:
             printf("<unknown>");

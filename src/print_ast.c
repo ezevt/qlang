@@ -80,9 +80,11 @@ static void print_expr(Expr *expr, FILE *out) {
 static void print_stmt(Stmt *stmt, FILE *out) {
     switch (stmt->kind) {
         case ST_BLOCK:
+            fprintf(out, "{\n");
             for (size_t i = 0; i < stmt->as.block.count; i++) {
                 print_stmt(stmt->as.block.items[i], out);
             }
+            fprintf(out, "}\n");
             break;
         case ST_EXPR:
             print_expr(stmt->as.expr_stmt, out);
