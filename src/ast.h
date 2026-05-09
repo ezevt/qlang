@@ -45,6 +45,7 @@ typedef enum {
     ST_LET,
     ST_IF,
     ST_WHILE,
+    ST_FN,
 } StmtKind;
 
 typedef struct Stmt {
@@ -75,6 +76,13 @@ typedef struct Stmt {
             Expr *condition;
             Stmt *body;
         } while_do;
+
+        struct {
+            StringSlice name;
+            StringSlice *params;
+            size_t param_count;
+            Stmt *body;
+        } fn;
     } as;
 } Stmt;
 

@@ -308,14 +308,29 @@ static InterpResult execute_while(Interpreter *it, SourceFile *src, Stmt *stmt) 
     return INTERP_OK;
 }
 
+static InterpResult execute_fn(Interpreter *it, SourceFile *src, Stmt *stmt) {
+    Value v = {
+        .kind = V_OBJ,
+        .as.obj = (Obj *)obj_fn_new(stmt->as.fn.params, stmt->as.fn.param_count, stmt->as.fn.body, it->env),
+    };
+
+    if (!env_define(it->env, stmt->as.fn.name, v)) {
+        diag_emit(it->diag, DIAG_ERROR, src, stmt->span, "'%.*s' is already defined.", stmt->as.fn.name.length, stmt->as.fn.name.data);
+        return INTERP_ERROR;
+    }
+    
+    return INTERP_OK;
+}
+
 InterpResult execute(Interpreter *it, SourceFile *src, Stmt *stmt) {
     switch (stmt->kind) {
-        case ST_BLOCK: return execute_block(it, src, stmt);
-        case ST_PRINT: return execute_print(it, src, stmt);
-        case ST_EXPR: return execute_expr(it, src, stmt);
-        case ST_LET: return execute_let(it, src, stmt);
-        case ST_IF: return execute_if(it, src, stmt);
-        case ST_WHILE: return execute_while(it, src, stmt);
+        case ST_BLOCK:      return execute_block(it, src, stmt);
+        case ST_PRINT:      return execute_print(it, src, stmt);
+        case ST_EXPR:       return execute_expr(it, src, stmt);
+        case ST_LET:        return execute_let(it, src, stmt);
+        case ST_IF:         return execute_if(it, src, stmt);
+        case ST_WHILE:      return execute_while(it, src, stmt);
+        case ST_FN:         return execute_fn(it, src, stmt);
         default:
             UNREACHABLE();
     }

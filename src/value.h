@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "ast.h"
+
 typedef enum {
     OBJ_FN,
     OBJ_STRING,
@@ -58,6 +60,20 @@ ObjString *obj_string_new(const char *src, size_t length);
 ObjString *obj_string_take(char *data, size_t length);
 
 static inline ObjString *as_string(Value v) { return (ObjString *)v.as.obj; }
+
+typedef struct ObjEnv ObjEnv;
+ 
+typedef struct {
+  Obj      obj;
+  StringSlice *params;
+  size_t   param_count;
+  Stmt    *body;
+  ObjEnv  *closure;
+} ObjFn;
+ 
+ObjFn *obj_fn_new(StringSlice *params, size_t param_count, Stmt *body, ObjEnv *closure);
+ 
+static inline ObjFn *as_fn(Value v) { return (ObjFn*)v.as.obj; }
 
 bool value_equals(Value a, Value b);
 bool value_is_truthy(Value v);

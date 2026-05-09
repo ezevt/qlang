@@ -24,6 +24,18 @@ ObjString *obj_string_take(char *data, size_t length) {
     UNREACHABLE();
 }
 
+ObjFn *obj_fn_new(StringSlice *params, size_t param_count, Stmt *body, ObjEnv *closure) {
+    ObjFn *obj = malloc(sizeof(ObjFn));
+
+    obj->obj.kind = OBJ_FN;
+    obj->params = params;
+    obj->param_count = param_count;
+    obj->body = body;
+    obj->closure = closure;
+
+    return obj;
+}
+
 bool value_equals(Value a, Value b) {
        if (a.kind != b.kind)
            return false;

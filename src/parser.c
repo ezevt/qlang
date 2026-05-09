@@ -3,6 +3,7 @@
 #include "ast.h"
 #include "diagnostic.h"
 #include "array.h"
+#include "source.h"
 
 #include <string.h>
 
@@ -362,6 +363,57 @@ static Stmt *while_statement(Parser *p) {
     return stmt;
 }
 
+static Stmt *fn_statement(Parser *p) {
+    Token *tok = advance(p);
+
+    if (!consume(p, TK_IDENT, "Expected function name."))
+            return NULL;
+
+    Token *name = previous(p);
+
+    if (!consume(p, TK_LPAREN, "Expected '(' after function name."))
+        return NULL;
+ 
+    StringSlice *params = NULL;
+    size_t count = 0;
+    size_t cap = 0;
+
+    while (peek(p)->kind != TK_RPAREN && peek(p)->kind != TK_EOF) {
+        if (!consume(p, TK_IDENT, "Expected parameter name.")) goto fail;
+        
+        Token *param = previous(p);
+        ARRAY_PUSH(params, count, cap, param->as.ident);
+        
+        if (peek(p)->kind != TK_RPAREN && !consume(p, TK_COMMA, "Expected ',' between parameters."))
+            goto fail;
+    }
+
+    if (!consume(p, TK_RPAREN, "Expected ')' after function parameters."))
+        goto fail;
+
+    Stmt *body = block(p);
+
+    if (!consume(p, TK_END, "Expected 'end' after function declaration.")) goto fail;
+
+    StringSlice *arena_args = ARENA_NEW_ARRAY(p->arena, StringSlice, count);
+
+    memcpy(arena_args, params, count * sizeof(StringSlice));
+    
+    
+    Stmt *stmt = new_stmt(p, ST_FN, tok->span);
+    stmt->as.fn.name = name->as.ident;
+    stmt->as.fn.params = params;
+    stmt->as.fn.param_count = count;
+    stmt->as.fn.body = body;
+
+    ARRAY_FREE(params, count, cap);
+    return stmt;
+
+fail:
+    ARRAY_FREE(params, count, cap);
+    return NULL;
+}
+
 static Stmt *expression_statement(Parser *p) {
     Token *start = peek(p);
     Expr *expr = expression(p);
@@ -382,6 +434,8 @@ static Stmt *statement(Parser *p) {
             return if_statement(p);
         case TK_WHILE:
             return while_statement(p);
+        case TK_FN:
+            return fn_statement(p);
         default:
             return expression_statement(p);
     }

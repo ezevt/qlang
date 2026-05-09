@@ -118,6 +118,11 @@ static void print_stmt(Stmt *stmt, FILE *out) {
             print_stmt(stmt->as.while_do.body, out);
             fprintf(out, "}\n");
             break;
+        case ST_FN:
+            fprintf(out, "fn %.*s(%lu) {\n", (int)stmt->as.fn.name.length, stmt->as.fn.name.data, stmt->as.fn.param_count);
+            print_stmt(stmt->as.fn.body, out);
+            fprintf(out, "}\n");
+            break;
         default:
             UNREACHABLE();
     }

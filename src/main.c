@@ -47,7 +47,7 @@ static bool run_source(
         return false;
     }
 
-    print_ast(program, stdout);
+    // print_ast(program, stdout);
 
     bool ok = interp_run(interp, src, program) != INTERP_ERROR;
 
@@ -69,12 +69,7 @@ static bool run_file(const char *path) {
         return false;
     }
 
-    printf(
-        "file %s: %zu lines, %zu chars\n",
-        path,
-        src->line_count,
-        src->length
-    );
+    // printf("file %s: %zu lines, %zu chars\n", path, src->line_count, src->length);
 
     Diagnostics diag = {0};
     Arena arena = {0};
