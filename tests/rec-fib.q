@@ -1,5 +1,7 @@
+let c = 0
 
 fn fib(n)
+    c = c + 1
     if n < 2 then
         ret n
     end
@@ -13,3 +15,6 @@ while i <= 15 do
     print(fib(i))
     i = i + 1
 end
+
+print("calls:")
+print(c)

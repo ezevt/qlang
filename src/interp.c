@@ -73,7 +73,7 @@ static InterpResult evaluate_call(Interpreter *it, SourceFile *src, Expr *expr, 
         return INTERP_ERROR;
     }
 
-    ObjEnv *call_env = env_new(it->env);
+    ObjEnv *call_env = env_new(fn->closure);
     
     for (size_t i = 0; i < fn->param_count; i++) {
         Value p;
