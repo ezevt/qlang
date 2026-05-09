@@ -18,6 +18,10 @@ static void print_expr(Expr *expr, FILE *out) {
         case EX_VAR:
             fprintf(out, "var");
             break;
+        case EX_CALL:
+            print_expr(expr->as.call.callee, out);
+            fprintf(out, "(%lu)", expr->as.call.param_count);
+            break;
         case EX_UNARY:
             fprintf(out, "unary(%c", expr->as.unary.op == TK_BANG ? '!' : '-');
             print_expr(expr->as.unary.right, out);
@@ -122,6 +126,11 @@ static void print_stmt(Stmt *stmt, FILE *out) {
             fprintf(out, "fn %.*s(%lu) {\n", (int)stmt->as.fn.name.length, stmt->as.fn.name.data, stmt->as.fn.param_count);
             print_stmt(stmt->as.fn.body, out);
             fprintf(out, "}\n");
+            break;
+        case ST_RET:
+            fprintf(out, "return(");
+            print_expr(stmt->as.ret, out);
+            fprintf(out, ")\n");
             break;
         default:
             UNREACHABLE();

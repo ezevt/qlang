@@ -4,6 +4,7 @@
 #include "diagnostic.h"
 #include "array.h"
 #include "source.h"
+#include "token.h"
 
 #include <string.h>
 
@@ -55,7 +56,7 @@ static void synchronize(Parser *p) {
             case TK_LET:
             case TK_IF:
             case TK_WHILE:
-            case TK_RETURN:
+            case TK_RET:
             case TK_PRINT:
                 return;
             default:
@@ -128,6 +129,45 @@ static Expr *primary(Parser *p) {
     return NULL;
 }
 
+static Expr *call(Parser *p) {
+    Expr *expr = primary(p);
+
+    if (match(p, TK_LPAREN)) {
+        Expr **params = NULL;
+        size_t count = 0;
+        size_t cap = 0;
+
+        while (peek(p)->kind != TK_RPAREN && !is_at_end(p)) {
+            Expr *param = expression(p);
+            ARRAY_PUSH(params, count, cap, param);
+
+            if (peek(p)->kind != TK_RPAREN && !consume(p, TK_COMMA, "Expected ',' between parameters.")) {
+                ARRAY_FREE(params, count, cap);
+                return NULL;
+            }
+        }
+
+        if (!consume(p, TK_RPAREN, "Expected ')' after function call.")) {
+            ARRAY_FREE(params, count, cap);
+            return NULL;
+        }
+
+        Expr **array = ARENA_NEW_ARRAY(p->arena, Expr*, count);
+        memcpy(array, params, count * sizeof(Expr *));
+
+        Expr *new = new_expr(p, EX_CALL, expr->span);
+        new->as.call.callee = expr;
+        new->as.call.params = array;
+        new->as.call.param_count = count;
+
+        expr = new;
+
+        ARRAY_FREE(params, count, cap);
+    }
+
+    return expr;
+}
+
 static Expr *unary(Parser *p) {
     if (match(p, TK_BANG) || match(p, TK_MINUS)) {
         Token *op = previous(p);
@@ -140,7 +180,7 @@ static Expr *unary(Parser *p) {
         return expr;
     }
 
-    return primary(p);
+    return call(p);
 }
 
 static Expr *factor(Parser *p) {
@@ -357,7 +397,7 @@ static Stmt *while_statement(Parser *p) {
     if (!consume(p, TK_END, "Expected 'end' after while-do loop.")) return NULL;
 
     Stmt *stmt = new_stmt(p, ST_WHILE, tok->span);
-    stmt->as.while_do.condition = condition;
+stmt->as.while_do.condition = condition;
     stmt->as.while_do.body = body;
 
     return stmt;
@@ -395,14 +435,13 @@ static Stmt *fn_statement(Parser *p) {
 
     if (!consume(p, TK_END, "Expected 'end' after function declaration.")) goto fail;
 
-    StringSlice *arena_args = ARENA_NEW_ARRAY(p->arena, StringSlice, count);
-
-    memcpy(arena_args, params, count * sizeof(StringSlice));
+    StringSlice *arena_params = ARENA_NEW_ARRAY(p->arena, StringSlice, count);
+    memcpy(arena_params, params, count * sizeof(StringSlice));
     
     
     Stmt *stmt = new_stmt(p, ST_FN, tok->span);
     stmt->as.fn.name = name->as.ident;
-    stmt->as.fn.params = params;
+    stmt->as.fn.params = arena_params;
     stmt->as.fn.param_count = count;
     stmt->as.fn.body = body;
 
@@ -412,6 +451,17 @@ static Stmt *fn_statement(Parser *p) {
 fail:
     ARRAY_FREE(params, count, cap);
     return NULL;
+}
+
+static Stmt *ret_statement(Parser *p) {
+    Token *tok = advance(p);
+    
+    Expr *value = expression(p);
+
+    Stmt *stmt = new_stmt(p, ST_RET, tok->span);
+    stmt->as.ret = value;
+
+    return stmt;
 }
 
 static Stmt *expression_statement(Parser *p) {
@@ -436,6 +486,8 @@ static Stmt *statement(Parser *p) {
             return while_statement(p);
         case TK_FN:
             return fn_statement(p);
+        case TK_RET:
+            return ret_statement(p);
         default:
             return expression_statement(p);
     }

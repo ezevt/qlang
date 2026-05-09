@@ -13,6 +13,7 @@ typedef enum {
     EX_STRING,
     EX_NIL,
     EX_VAR,
+    EX_CALL,
     EX_GROUPING,
     EX_UNARY,
     EX_BINARY,
@@ -35,6 +36,7 @@ typedef struct Expr {
         struct { Expr *left; Expr *right; TokenKind op; } binary;
         struct { Expr *target; Expr *value; } assignment;
         struct { Expr *left; Expr *right; TokenKind op; } logic;
+        struct { Expr *callee; Expr** params; size_t param_count; } call;
     } as;
 } Expr;
 
@@ -46,6 +48,7 @@ typedef enum {
     ST_IF,
     ST_WHILE,
     ST_FN,
+    ST_RET,
 } StmtKind;
 
 typedef struct Stmt {
@@ -83,6 +86,8 @@ typedef struct Stmt {
             size_t param_count;
             Stmt *body;
         } fn;
+
+        Expr *ret;
     } as;
 } Stmt;
 

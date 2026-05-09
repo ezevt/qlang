@@ -21,7 +21,7 @@ static const KeywordEntry keywords[] = {
     {"else", TK_ELSE},     {"end", TK_END},
     {"for", TK_FOR},       {"while", TK_WHILE},
     {"do", TK_DO},         {"fn", TK_FN},
-    {"return", TK_RETURN}, {"continue", TK_CONTINUE},
+    {"ret", TK_RET},       {"continue", TK_CONTINUE},
     {"break", TK_BREAK},   {"true", TK_TRUE},
     {"false", TK_FALSE},   {"nil", TK_NIL},
     {"and", TK_AND},       {"or", TK_OR},
