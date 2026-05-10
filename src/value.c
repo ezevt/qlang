@@ -1,11 +1,12 @@
 #include "value.h"
 #include "common.h"
+#include "gc.h"
 
 #include <stdio.h>
 #include <string.h>
 
-ObjString *obj_string_new(const char *src, size_t length) {
-    ObjString *obj = malloc(sizeof(ObjString));
+ObjString *obj_string_new(GC *gc, const char *src, size_t length) {
+    ObjString *obj = gc_alloc_obj(gc, sizeof(ObjString), OBJ_STRING);
 
     char *data = malloc((length + 1) * sizeof(char));
     memcpy(data, src, length);
@@ -18,14 +19,8 @@ ObjString *obj_string_new(const char *src, size_t length) {
     return obj;
 }
 
-ObjString *obj_string_take(char *data, size_t length) {
-    (void)data;
-    (void)length;
-    UNREACHABLE();
-}
-
-ObjFn *obj_fn_new(StringSlice *params, size_t param_count, Stmt *body, ObjEnv *closure) {
-    ObjFn *obj = malloc(sizeof(ObjFn));
+ObjFn *obj_fn_new(GC *gc, StringSlice *params, size_t param_count, Stmt *body, ObjEnv *closure) {
+    ObjFn *obj = gc_alloc_obj(gc, sizeof(ObjFn), OBJ_FN);
 
     obj->obj.kind = OBJ_FN;
     obj->params = params;

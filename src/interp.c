@@ -3,18 +3,22 @@
 #include "common.h"
 #include "diagnostic.h"
 #include "env.h"
+#include "gc.h"
 #include "value.h"
 
 void interp_init(Interpreter *it, Diagnostics *diag) {
-    it->global = env_new(NULL);
-    it->env = it->global;
     it->diag = diag;
+    it->env = NULL;
+    it->global = NULL;
     it->return_value = value_nil();
+
+    gc_init(&it->gc, it);
+    it->global = env_new(&it->gc, NULL);
+    it->env = it->global;
 }
 
 void interp_shutdown(Interpreter *it) {
-    free(it->env->entries);
-    free(it->env);
+    gc_shutdown(&it->gc);
 }
 
 InterpResult interp_run(Interpreter *it, SourceFile *src, Stmt *root) {
@@ -73,23 +77,25 @@ static InterpResult evaluate_call(Interpreter *it, SourceFile *src, Expr *expr, 
         return INTERP_ERROR;
     }
 
-    ObjEnv *call_env = env_new(fn->closure);
-    
+    ObjEnv *call_env = env_new(&it->gc, fn->closure);
+    gc_push_root(&it->gc, (Obj *)call_env);
+
+    ObjEnv *prev = it->env;
+    gc_push_root(&it->gc, (Obj *)prev);
+
     for (size_t i = 0; i < fn->param_count; i++) {
         Value p;
         if (evaluate(it, src, expr->as.call.params[i], &p) == INTERP_ERROR)
-            return INTERP_ERROR;
+            goto error;
 
         env_define(call_env, fn->params[i], p);
     }
 
-    ObjEnv *prev_env = it->env;
     it->env = call_env;
-
 
     for (size_t i = 0; i < fn->body->as.block.count; i++) {
         InterpResult res = execute(it, src, fn->body->as.block.items[i]);
-        if (res == INTERP_ERROR) return INTERP_ERROR;
+        if (res == INTERP_ERROR) goto error;
 
         if (res == INTERP_RETURN) {
             *out = it->return_value;
@@ -97,9 +103,16 @@ static InterpResult evaluate_call(Interpreter *it, SourceFile *src, Expr *expr, 
         }
     }
 
-    it->env = prev_env;
+    it->env = prev;
 
+    gc_pop_root(&it->gc);
+    gc_pop_root(&it->gc);
     return INTERP_OK;
+
+error:
+    gc_pop_root(&it->gc);
+    gc_pop_root(&it->gc);
+    return INTERP_ERROR;
 }
 
 static InterpResult evaluate_assignment(Interpreter *it, SourceFile *src, Expr *expr, Value *out) {
@@ -256,7 +269,7 @@ InterpResult evaluate(Interpreter *it, SourceFile *src, Expr *expr, Value *out) 
         case EX_STRING:
             *out = (Value) {
                 .kind = V_OBJ,
-                .as.obj = (Obj *)obj_string_new(expr->as.string.data, expr->as.string.length),
+                .as.obj = (Obj *)obj_string_new(&it->gc, expr->as.string.data, expr->as.string.length),
             };
             break;
         default:
@@ -267,22 +280,23 @@ InterpResult evaluate(Interpreter *it, SourceFile *src, Expr *expr, Value *out) 
 }
 
 static InterpResult execute_block(Interpreter *it, SourceFile *src, Stmt *stmt) {
-    ObjEnv *local = env_new(it->env);
+    ObjEnv *prev = it->env;
+    gc_push_root(&it->gc, (Obj *)prev);
+
+    ObjEnv *local = env_new(&it->gc, it->env);
     it->env = local;
 
+    InterpResult final = INTERP_OK;
     for (size_t i = 0; i < stmt->as.block.count; i++) {
-        InterpResult res = execute(it, src, stmt->as.block.items[i]);
+        final = execute(it, src, stmt->as.block.items[i]);
 
-        if (res == INTERP_ERROR) return INTERP_ERROR;
-        if (res == INTERP_RETURN) return INTERP_RETURN;
+        if (final == INTERP_ERROR) break;
+        if (final == INTERP_RETURN) break;
     }
 
-    it->env = it->env->enclosing;
-
-    free(local->entries);
-    free(local);
-    
-    return INTERP_OK;
+    it->env = prev;
+    gc_pop_root(&it->gc);
+    return final;
 }
 
 static InterpResult execute_print(Interpreter *it, SourceFile *src, Stmt *stmt) {
@@ -359,7 +373,7 @@ static InterpResult execute_while(Interpreter *it, SourceFile *src, Stmt *stmt) 
 static InterpResult execute_fn(Interpreter *it, SourceFile *src, Stmt *stmt) {
     Value v = {
         .kind = V_OBJ,
-        .as.obj = (Obj *)obj_fn_new(stmt->as.fn.params, stmt->as.fn.param_count, stmt->as.fn.body, it->env),
+        .as.obj = (Obj *)obj_fn_new(&it->gc, stmt->as.fn.params, stmt->as.fn.param_count, stmt->as.fn.body, it->env),
     };
 
     if (!env_define(it->env, stmt->as.fn.name, v)) {

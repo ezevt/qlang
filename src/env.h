@@ -3,6 +3,7 @@
 
 #include "source.h"
 #include "value.h"
+#include "gc.h"
 
 typedef struct ObjEnv ObjEnv;
 
@@ -20,7 +21,7 @@ typedef struct ObjEnv {
     ObjEnv *enclosing;
 } ObjEnv;
 
-ObjEnv *env_new(ObjEnv *enclosing);
+ObjEnv *env_new(GC *gc, ObjEnv *enclosing);
 bool env_define(ObjEnv *env, StringSlice name, Value v);
 bool env_get(ObjEnv *env, StringSlice name, Value *out);
 bool env_assign(ObjEnv *env, StringSlice name, Value v);

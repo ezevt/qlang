@@ -5,6 +5,7 @@
 #include "value.h"
 #include "diagnostic.h"
 #include "env.h"
+#include "gc.h"
 
 typedef enum {
     INTERP_OK,
@@ -12,8 +13,9 @@ typedef enum {
     INTERP_RETURN,
 } InterpResult;
 
-typedef struct {
+typedef struct Interpreter {
     Diagnostics *diag;
+    GC gc;
     ObjEnv *global;
     ObjEnv *env;
     Value return_value;

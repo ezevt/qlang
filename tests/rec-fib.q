@@ -11,7 +11,7 @@ end
 
 let i = 1
 
-while i <= 15 do
+while i < 12 do
     print(fib(i))
     i = i + 1
 end

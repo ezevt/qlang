@@ -6,14 +6,20 @@
 
 #include "ast.h"
 
+typedef struct GC GC;
+
 typedef enum {
     OBJ_FN,
     OBJ_STRING,
     OBJ_ENV,
 } ObjKind;
 
-typedef struct {
+typedef struct Obj Obj;
+
+typedef struct Obj {
     ObjKind kind;
+    bool marked;
+    Obj *next;
 } Obj;
 
 typedef enum {
@@ -56,8 +62,7 @@ typedef struct {
     char *data;
 } ObjString;
 
-ObjString *obj_string_new(const char *src, size_t length);
-ObjString *obj_string_take(char *data, size_t length);
+ObjString *obj_string_new(GC *gc, const char *src, size_t length);
 
 static inline ObjString *as_string(Value v) { return (ObjString *)v.as.obj; }
 
@@ -71,7 +76,7 @@ typedef struct {
   ObjEnv  *closure;
 } ObjFn;
  
-ObjFn *obj_fn_new(StringSlice *params, size_t param_count, Stmt *body, ObjEnv *closure);
+ObjFn *obj_fn_new(GC *gc, StringSlice *params, size_t param_count, Stmt *body, ObjEnv *closure);
  
 static inline ObjFn *as_fn(Value v) { return (ObjFn*)v.as.obj; }
 

@@ -1,7 +1,7 @@
 let a = 1
 let b = 1
 
-while a < 100 do
+while a < 1000 do
     print(a)
 
     let c = a

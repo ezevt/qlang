@@ -19,8 +19,8 @@ static long env_find_local(ObjEnv *env, StringSlice name) {
     return -1;
 }
  
-ObjEnv *env_new(ObjEnv *enclosing) {
-    ObjEnv *env = malloc(sizeof(ObjEnv));
+ObjEnv *env_new(GC *gc, ObjEnv *enclosing) {
+    ObjEnv *env = gc_alloc_obj(gc, sizeof(ObjEnv), OBJ_ENV);
 
     env->obj.kind = OBJ_ENV;
     env->enclosing = enclosing;

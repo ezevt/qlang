@@ -57,7 +57,7 @@ void run_loop(void) {
     char buffer[1024];
     Diagnostics diag = {0};
     Arena arena = {0};
-    Interpreter it;
+    Interpreter it = {0};
 
 
     interp_init(&it, &diag);
