@@ -464,6 +464,18 @@ static Stmt *ret_statement(Parser *p) {
     return stmt;
 }
 
+static Stmt *break_statement(Parser *p) {
+    Token *tok = advance(p);
+    Stmt *stmt = new_stmt(p, ST_BREAK, tok->span);
+    return stmt;
+}
+
+static Stmt *continue_statement(Parser *p) {
+    Token *tok = advance(p);
+    Stmt *stmt = new_stmt(p, ST_CONTINUE, tok->span);
+    return stmt;
+}
+
 static Stmt *expression_statement(Parser *p) {
     Token *start = peek(p);
     Expr *expr = expression(p);
@@ -488,6 +500,10 @@ static Stmt *statement(Parser *p) {
             return fn_statement(p);
         case TK_RET:
             return ret_statement(p);
+        case TK_BREAK:
+            return break_statement(p);
+        case TK_CONTINUE:
+            return continue_statement(p);
         default:
             return expression_statement(p);
     }

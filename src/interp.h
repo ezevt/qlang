@@ -11,6 +11,8 @@ typedef enum {
     INTERP_OK,
     INTERP_ERROR,
     INTERP_RETURN,
+    INTERP_CONTINUE,
+    INTERP_BREAK,
 } InterpResult;
 
 typedef struct Interpreter {

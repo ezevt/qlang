@@ -49,6 +49,8 @@ typedef enum {
     ST_WHILE,
     ST_FN,
     ST_RET,
+    ST_BREAK,
+    ST_CONTINUE,
 } StmtKind;
 
 typedef struct Stmt {

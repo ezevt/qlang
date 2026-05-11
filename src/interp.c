@@ -30,6 +30,16 @@ InterpResult interp_run(Interpreter *it, SourceFile *src, Stmt *root) {
             diag_emit(it->diag, DIAG_ERROR, src, root->as.block.items[i]->span, "'ret' outside of function.");
             return INTERP_ERROR;
         }
+        
+        if (res == INTERP_CONTINUE) {
+            diag_emit(it->diag, DIAG_ERROR, src, root->as.block.items[i]->span, "'continue' outside of loop.");
+            return INTERP_ERROR;
+        }
+
+        if (res == INTERP_RETURN) {
+            diag_emit(it->diag, DIAG_ERROR, src, root->as.block.items[i]->span, "'break' outside of loop.");
+            return INTERP_ERROR;
+        }
     }
 
     return INTERP_OK;
@@ -291,7 +301,11 @@ static InterpResult execute_block(Interpreter *it, SourceFile *src, Stmt *stmt) 
         final = execute(it, src, stmt->as.block.items[i]);
 
         if (final == INTERP_ERROR) break;
-        if (final == INTERP_RETURN) break;
+
+        if (final == INTERP_RETURN ||
+            final == INTERP_BREAK ||
+            final == INTERP_CONTINUE)
+            break;
     }
 
     it->env = prev;
@@ -365,9 +379,11 @@ static InterpResult execute_while(Interpreter *it, SourceFile *src, Stmt *stmt) 
 
         res = execute(it, src, stmt->as.while_do.body);
         if (res == INTERP_ERROR) return INTERP_ERROR;
+        if (res == INTERP_BREAK) break;
+        if (res == INTERP_CONTINUE) continue;
     }
 
-    return INTERP_OK;
+return INTERP_OK;
 }
 
 static InterpResult execute_fn(Interpreter *it, SourceFile *src, Stmt *stmt) {
@@ -404,6 +420,8 @@ InterpResult execute(Interpreter *it, SourceFile *src, Stmt *stmt) {
         case ST_WHILE:      return execute_while(it, src, stmt);
         case ST_FN:         return execute_fn(it, src, stmt);
         case ST_RET:        return execute_ret(it, src, stmt);
+        case ST_CONTINUE:   return INTERP_CONTINUE;
+        case ST_BREAK:      return INTERP_BREAK;
         default:
             UNREACHABLE();
     }

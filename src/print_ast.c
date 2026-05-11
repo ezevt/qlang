@@ -132,6 +132,12 @@ static void print_stmt(Stmt *stmt, FILE *out) {
             print_expr(stmt->as.ret, out);
             fprintf(out, ")\n");
             break;
+        case ST_BREAK:
+            fprintf(out, "break\n");
+            break;
+        case ST_CONTINUE:
+            fprintf(out, "continue\n");
+            break;
         default:
             UNREACHABLE();
     }
